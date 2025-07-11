@@ -62,7 +62,7 @@ def test(bot, opponent_bot, map_num):
 
 
 def test_all_maps(bot, opponents, maps_to_test=None):
-    """Test against all opponent_bots on all maps"""
+    """모든 맵에서 모든 opponent_bots와 테스트"""
     if maps_to_test is None:
         maps_to_test = list(range(1, 101))  # map1 ~ map100
     
@@ -70,14 +70,14 @@ def test_all_maps(bot, opponents, maps_to_test=None):
     total_wins = 0
     results_by_opponent = {}
     
-    print(f"\n🎮 Starting all maps test: {len(maps_to_test)} maps × {len(opponents)} bots = {len(maps_to_test) * len(opponents)} games")
+    print(f"\n🎮 모든 맵 테스트 시작: {len(maps_to_test)}개 맵 × {len(opponents)}개 봇 = {len(maps_to_test) * len(opponents)}게임")
     print("=" * 80)
     
     for opponent in opponents:
         opponent_name = opponent.split('/')[1].split('.')[0]
         results_by_opponent[opponent_name] = {'wins': 0, 'losses': 0, 'details': []}
         
-        print(f"\n🤖 Testing {opponent_name} vs bt_bot...")
+        print(f"\n🤖 {opponent_name} vs bt_bot 테스트 중...")
         
         for map_num in maps_to_test:
             result = test(bot, opponent, map_num)
@@ -93,24 +93,24 @@ def test_all_maps(bot, opponents, maps_to_test=None):
             
             results_by_opponent[opponent_name]['details'].append(result)
             
-            # Show progress every 10 games
+            # 진행상황 표시 (매 10게임마다)
             if map_num % 10 == 0:
                 win_rate = results_by_opponent[opponent_name]['wins'] / (results_by_opponent[opponent_name]['wins'] + results_by_opponent[opponent_name]['losses']) * 100
-                print(f"  Map {map_num}: {status} (Win rate: {win_rate:.1f}%)")
+                print(f"  Map {map_num}: {status} (승률: {win_rate:.1f}%)")
     
     return total_games, total_wins, results_by_opponent
 
 
 def print_detailed_results(total_games, total_wins, results_by_opponent):
-    """Print detailed test results"""
+    """상세한 결과 출력"""
     print("\n" + "=" * 80)
-    print("🏆 Final Test Results")
+    print("🏆 최종 테스트 결과")
     print("=" * 80)
     
     overall_win_rate = (total_wins / total_games) * 100 if total_games > 0 else 0
-    print(f"📊 Overall results: {total_wins}/{total_games} wins (Win rate: {overall_win_rate:.1f}%)")
+    print(f"📊 전체 결과: {total_wins}/{total_games} 승 (승률: {overall_win_rate:.1f}%)")
     
-    print(f"\n📈 Detailed results by opponent:")
+    print(f"\n📈 상대별 상세 결과:")
     for opponent_name, stats in results_by_opponent.items():
         wins = stats['wins']
         losses = stats['losses']
@@ -128,11 +128,11 @@ def print_detailed_results(total_games, total_wins, results_by_opponent):
         else:
             emoji = "⚠️"
         
-        print(f"  {emoji} vs {opponent_name:15}: {wins:3d}/{total:3d} wins (Win rate: {win_rate:5.1f}%)")
+        print(f"  {emoji} vs {opponent_name:15}: {wins:3d}/{total:3d} 승 (승률: {win_rate:5.1f}%)")
         
-        # Show details of lost games
+        # 패배한 게임이 있으면 상세 정보 표시
         if losses > 0:
-            print(f"     ❌ Lost games:")
+            print(f"     ❌ 패배 게임들:")
             for detail in stats['details']:
                 if detail['winner'] != 'bt_bot':
                     print(f"        Map {detail['map']:3d}: {detail['reason']}")
@@ -141,13 +141,13 @@ def print_detailed_results(total_games, total_wins, results_by_opponent):
 
 
 def test_sample_maps(bot, opponents, sample_size=20):
-    """Test on randomly selected maps (for quick testing)"""
+    """랜덤하게 선택된 맵들에서 테스트 (빠른 테스트용)"""
     all_maps = list(range(1, 101))
     sample_maps = random.sample(all_maps, min(sample_size, len(all_maps)))
     sample_maps.sort()
     
-    print(f"🎲 Random sample test: {sample_size} maps")
-    print(f"Selected maps: {sample_maps}")
+    print(f"🎲 랜덤 샘플 테스트: {sample_size}개 맵")
+    print(f"선택된 맵들: {sample_maps}")
     
     return test_all_maps(bot, opponents, sample_maps)
 
@@ -166,38 +166,38 @@ if __name__ == '__main__':
         mode = sys.argv[1].lower()
         
         if mode == "show":
-            # Existing visualization mode (specific maps)
+            # 기존 시각화 모드 (특정 맵들)
             maps = [71, 13, 24, 56, 7]
             for opponent, map_num in zip(opponents, maps):
                 show_match(my_bot, opponent, map_num)
                 
         elif mode == "test":
-            # Existing test mode (specific maps)
+            # 기존 테스트 모드 (특정 맵들)
             maps = [71, 13, 24, 56, 7]
             for opponent, map_num in zip(opponents, maps):
                 result = test(my_bot, opponent, map_num)
-                status = "Victory!" if result['winner'] == 'bt_bot' else f"Defeat ({result['reason']})"
+                status = "승리!" if result['winner'] == 'bt_bot' else f"패배 ({result['reason']})"
                 print(f"{result['bot']} vs {result['opponent']} (Map {map_num}): {status}")
                 
         elif mode == "all":
-            # Test on all maps
+            # 모든 맵에서 테스트
             total_games, total_wins, results = test_all_maps(my_bot, opponents)
             print_detailed_results(total_games, total_wins, results)
             
         elif mode == "sample":
-            # Random sample test
+            # 랜덤 샘플 테스트
             sample_size = int(sys.argv[2]) if len(sys.argv) >= 3 else 20
             total_games, total_wins, results = test_sample_maps(my_bot, opponents, sample_size)
             print_detailed_results(total_games, total_wins, results)
             
         else:
-            print("Usage:")
-            print("  python run.py show    - Visualize on specific maps")
-            print("  python run.py test    - Simple test on specific maps")
-            print("  python run.py all     - Full test on all maps")
-            print("  python run.py sample [N] - Test on N random maps (default: 20)")
+            print("사용법:")
+            print("  python run.py show    - 특정 맵들에서 시각화")
+            print("  python run.py test    - 특정 맵들에서 간단 테스트")
+            print("  python run.py all     - 모든 맵에서 전체 테스트")
+            print("  python run.py sample [N] - N개 랜덤 맵에서 테스트 (기본값: 20)")
     else:
-        # Default: visualization on specific maps
+        # 기본값: 특정 맵들에서 시각화
         maps = [71, 13, 24, 56, 7]
         for opponent, map_num in zip(opponents, maps):
             show_match(my_bot, opponent, map_num)

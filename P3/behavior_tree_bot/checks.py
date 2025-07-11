@@ -11,15 +11,15 @@ def have_largest_fleet(state):
              + sum(fleet.num_ships for fleet in state.enemy_fleets())
 
 
-# New advanced check functions
+# 새로운 고급 체크 함수들
 def under_attack(state):
-    """Check if my planets are under attack by enemy fleets"""
+    """내 행성이 적 함대의 공격을 받고 있는지 확인"""
     return any(fleet.destination_planet in [p.ID for p in state.my_planets()] 
                for fleet in state.enemy_fleets())
 
 
 def have_overwhelming_advantage(state):
-    """Check if we have overwhelming advantage (more than 2x enemy strength)"""
+    """압도적인 우위를 가지고 있는지 확인 (2배 이상)"""
     my_total = sum(planet.num_ships for planet in state.my_planets()) + \
                sum(fleet.num_ships for fleet in state.my_fleets())
     enemy_total = sum(planet.num_ships for planet in state.enemy_planets()) + \
@@ -28,12 +28,12 @@ def have_overwhelming_advantage(state):
 
 
 def have_multiple_planets(state):
-    """Check if we own multiple planets"""
+    """여러 행성을 소유하고 있는지 확인"""
     return len(state.my_planets()) > 1
 
 
 def enemy_nearby(state):
-    """Check if enemy planets are nearby"""
+    """가까운 거리에 적 행성이 있는지 확인"""
     if not state.my_planets() or not state.enemy_planets():
         return False
     
@@ -43,11 +43,11 @@ def enemy_nearby(state):
             distance = state.distance(my_planet.ID, enemy_planet.ID)
             min_distance = min(min_distance, distance)
     
-    return min_distance <= 5  # Distance 5 or less is considered nearby
+    return min_distance <= 5  # 거리 5 이하면 가까운 것으로 판단
 
 
 def weak_enemy_exists(state):
-    """Check if there's a weak enemy planet that we can easily defeat"""
+    """내가 쉽게 이길 수 있는 약한 적 행성이 있는지 확인"""
     if not state.my_planets() or not state.enemy_planets():
         return False
     
@@ -55,13 +55,13 @@ def weak_enemy_exists(state):
     for enemy_planet in state.enemy_planets():
         distance = state.distance(strongest_planet.ID, enemy_planet.ID)
         required_ships = enemy_planet.num_ships + distance * enemy_planet.growth_rate + 1
-        if strongest_planet.num_ships > required_ships * 1.5:  # Can win comfortably
+        if strongest_planet.num_ships > required_ships * 1.5:  # 여유있게 이길 수 있으면
             return True
     return False
 
 
 def should_defend_planet(state):
-    """Check if any planet needs defense"""
+    """방어가 필요한 행성이 있는지 확인"""
     for my_planet in state.my_planets():
         incoming_enemy = sum(fleet.num_ships for fleet in state.enemy_fleets() 
                            if fleet.destination_planet == my_planet.ID)
@@ -74,24 +74,24 @@ def should_defend_planet(state):
 
 
 def profitable_neutral_exists(state):
-    """Check if there's a profitable neutral planet to capture"""
+    """수익성 있는 중립 행성이 있는지 확인"""
     if not state.my_planets() or not state.neutral_planets():
         return False
     
     for my_planet in state.my_planets():
         for neutral_planet in state.neutral_planets():
-            if my_planet.num_ships > neutral_planet.num_ships + 5:  # Can capture comfortably
+            if my_planet.num_ships > neutral_planet.num_ships + 5:  # 여유있게 점령 가능
                 return True
     return False
 
 
 def early_game(state):
-    """Check if it's early game (low percentage of planets owned)"""
+    """게임 초기인지 확인 (총 행성 수가 적음)"""
     total_owned = len(state.my_planets()) + len(state.enemy_planets())
     total_planets = total_owned + len(state.neutral_planets())
-    return total_owned < total_planets * 0.6  # Less than 60% owned means early game
+    return total_owned < total_planets * 0.6  # 60% 미만이 점령된 상태면 초기
 
 
 def can_aggressive_expand(state):
-    """Check if we can aggressively expand"""
+    """공격적으로 확장할 수 있는 상황인지 확인"""
     return have_largest_fleet(state) and len(state.my_fleets()) <= 2

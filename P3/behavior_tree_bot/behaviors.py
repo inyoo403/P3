@@ -41,9 +41,9 @@ def spread_to_weakest_neutral_planet(state):
         return issue_order(state, strongest_planet.ID, weakest_planet.ID, strongest_planet.num_ships / 2)
 
 
-# New advanced behavior functions
+# 새로운 고급 행동 함수들
 def smart_attack_calculation(state):
-    """Attack based on sophisticated calculations"""
+    """정교한 계산을 통한 공격"""
     my_planets = sorted(state.my_planets(), key=lambda p: p.num_ships, reverse=True)
     enemy_planets = [planet for planet in state.enemy_planets()
                     if not any(fleet.destination_planet == planet.ID for fleet in state.my_fleets())]
@@ -51,7 +51,7 @@ def smart_attack_calculation(state):
     if not my_planets or not enemy_planets:
         return False
     
-    # Calculate attack efficiency to select the optimal attack
+    # 공격 효율성을 계산하여 최적의 공격 선택
     best_attacks = []
     for my_planet in my_planets:
         for enemy_planet in enemy_planets:
@@ -59,12 +59,12 @@ def smart_attack_calculation(state):
             required_ships = enemy_planet.num_ships + distance * enemy_planet.growth_rate + 1
             
             if my_planet.num_ships > required_ships:
-                # Efficiency = enemy planet growth rate / required ships
+                # 효율성 = 적 행성 성장률 / 필요한 함선 수
                 efficiency = enemy_planet.growth_rate / required_ships
                 best_attacks.append((efficiency, my_planet, enemy_planet, required_ships))
     
     if best_attacks:
-        # Execute the most efficient attack
+        # 가장 효율적인 공격 실행
         best_attacks.sort(reverse=True)
         _, my_planet, enemy_planet, required_ships = best_attacks[0]
         return issue_order(state, my_planet.ID, enemy_planet.ID, required_ships)
@@ -73,12 +73,12 @@ def smart_attack_calculation(state):
 
 
 def defend_weakest_planet(state):
-    """Defend the weakest planet"""
+    """가장 취약한 행성을 방어"""
     my_planets = state.my_planets()
     if len(my_planets) <= 1:
         return False
     
-    # Calculate the risk level of each planet
+    # 각 행성의 위험도 계산
     planet_risks = []
     for planet in my_planets:
         incoming_enemy = sum(fleet.num_ships for fleet in state.enemy_fleets() 
@@ -89,14 +89,14 @@ def defend_weakest_planet(state):
         net_strength = planet.num_ships + incoming_friendly - incoming_enemy
         planet_risks.append((net_strength, planet))
     
-    planet_risks.sort()  # Sort by the most vulnerable
+    planet_risks.sort()  # 가장 취약한 순으로 정렬
     
-    # Check if the weakest planet is actually in a dangerous situation
+    # 가장 취약한 행성이 실제로 위험한 상황인지 확인
     weakest_strength, weakest_planet = planet_risks[0]
-    if weakest_strength >= 0:  # If not in danger, no need to defend
+    if weakest_strength >= 0:  # 위험하지 않으면 방어 불필요
         return False
     
-    # Find the strongest planet that can provide help
+    # 도움을 줄 수 있는 가장 강한 행성 찾기
     helper_planets = [(p.num_ships, p) for _, p in planet_risks[1:] if p.num_ships > 10]
     if not helper_planets:
         return False
@@ -104,13 +104,13 @@ def defend_weakest_planet(state):
     helper_planets.sort(reverse=True)
     helper_strength, helper_planet = helper_planets[0]
     
-    # Support as much as needed
+    # 필요한 만큼 지원
     needed_ships = min(helper_strength // 2, abs(weakest_strength) + 5)
     return issue_order(state, helper_planet.ID, weakest_planet.ID, needed_ships)
 
 
 def aggressive_multi_attack(state):
-    """Multiple attacks when in an overwhelming advantage"""
+    """압도적 우위 시 다중 공격"""
     my_planets = [p for p in state.my_planets() if p.num_ships > 20]
     enemy_planets = [p for p in state.enemy_planets() 
                     if not any(f.destination_planet == p.ID for f in state.my_fleets())]
@@ -118,17 +118,17 @@ def aggressive_multi_attack(state):
     if len(my_planets) < 2 or not enemy_planets:
         return False
     
-    # Attack from multiple planets simultaneously
+    # 여러 행성에서 동시에 공격
     attacks_made = 0
     for my_planet in my_planets:
-        if attacks_made >= 3:  # Maximum of 3 attacks
+        if attacks_made >= 3:  # 최대 3개 공격
             break
             
         for enemy_planet in enemy_planets:
             distance = state.distance(my_planet.ID, enemy_planet.ID)
             required_ships = enemy_planet.num_ships + distance * enemy_planet.growth_rate + 1
             
-            if my_planet.num_ships > required_ships * 1.5:  # Can attack with a comfortable margin
+            if my_planet.num_ships > required_ships * 1.5:  # 여유있게 공격 가능
                 issue_order(state, my_planet.ID, enemy_planet.ID, required_ships)
                 enemy_planets.remove(enemy_planet)
                 attacks_made += 1
@@ -138,7 +138,7 @@ def aggressive_multi_attack(state):
 
 
 def strategic_spread(state):
-    """Strategic expansion to neutral planets"""
+    """전략적 중립 행성 확장"""
     my_planets = state.my_planets()
     neutral_planets = [p for p in state.neutral_planets() 
                       if not any(f.destination_planet == p.ID for f in state.my_fleets())]
@@ -146,7 +146,7 @@ def strategic_spread(state):
     if not my_planets or not neutral_planets:
         return False
     
-    # Sort neutral planets by value (growth rate vs. capture cost)
+    # 중립 행성을 가치별로 정렬 (성장률 대비 점령 비용)
     neutral_values = []
     for neutral in neutral_planets:
         min_cost = float('inf')
@@ -164,7 +164,7 @@ def strategic_spread(state):
             neutral_values.append((value, neutral, closest_planet, min_cost))
     
     if neutral_values:
-        # Capture the most valuable neutral planet
+        # 가장 가치있는 중립 행성 점령
         neutral_values.sort(reverse=True)
         _, neutral, my_planet, cost = neutral_values[0]
         return issue_order(state, my_planet.ID, neutral.ID, cost)
@@ -173,26 +173,26 @@ def strategic_spread(state):
 
 
 def reinforce_front_line(state):
-    """Reinforce front-line planets"""
+    """전선 행성 강화"""
     my_planets = state.my_planets()
     enemy_planets = state.enemy_planets()
     
     if len(my_planets) <= 1 or not enemy_planets:
         return False
     
-    # Identify front-line planets (closest to the enemy)
+    # 전선 행성들 식별 (적과 가장 가까운 행성들)
     front_line_planets = []
     for my_planet in my_planets:
         min_enemy_distance = min(state.distance(my_planet.ID, enemy.ID) for enemy in enemy_planets)
         front_line_planets.append((min_enemy_distance, my_planet))
     
-    front_line_planets.sort()  # Sort by distance
+    front_line_planets.sort()  # 가까운 순으로 정렬
     
-    # If the foremost planet is weak, reinforce it
+    # 가장 전선에 있는 행성이 약하면 강화
     if len(front_line_planets) >= 2:
         front_distance, front_planet = front_line_planets[0]
         
-        # Find a rear planet with spare ships
+        # 후방 행성 중 여유있는 것 찾기
         rear_planets = [(p.num_ships, p) for _, p in front_line_planets[1:] if p.num_ships > 15]
         
         if rear_planets and front_planet.num_ships < 20:
@@ -205,8 +205,8 @@ def reinforce_front_line(state):
 
 
 def opportunistic_attack(state):
-    """Opportunistic attack (when enemy fleets are absent)"""
-    if state.enemy_fleets():  # If enemy fleets are moving, wait
+    """기회주의적 공격 (적 함대가 비어있을 때)"""
+    if state.enemy_fleets():  # 적 함대가 움직이고 있으면 대기
         return False
     
     my_planets = state.my_planets()
@@ -215,18 +215,18 @@ def opportunistic_attack(state):
     if not my_planets or not enemy_planets:
         return False
     
-    # Find the easiest enemy planet to conquer
+    # 가장 쉽게 이길 수 있는 적 행성 찾기
     easy_targets = []
     for my_planet in my_planets:
         for enemy_planet in enemy_planets:
             distance = state.distance(my_planet.ID, enemy_planet.ID)
             required_ships = enemy_planet.num_ships + 1
             
-            if my_planet.num_ships > required_ships * 2:  # Can win overwhelmingly
+            if my_planet.num_ships > required_ships * 2:  # 압도적으로 이길 수 있음
                 easy_targets.append((required_ships, my_planet, enemy_planet))
     
     if easy_targets:
-        easy_targets.sort()  # By the lowest cost
+        easy_targets.sort()  # 가장 적은 비용 순
         required_ships, my_planet, enemy_planet = easy_targets[0]
         return issue_order(state, my_planet.ID, enemy_planet.ID, required_ships)
     
