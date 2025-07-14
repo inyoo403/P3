@@ -136,7 +136,6 @@ def aggressive_multi_attack(state):
     
     return attacks_made > 0
 
-
 def strategic_spread(state):
     """Strategic neutral planet expansion"""
     my_planets = state.my_planets()
@@ -155,7 +154,9 @@ def strategic_spread(state):
         for my_planet in my_planets:
             distance = state.distance(my_planet.ID, neutral.ID)
             cost = neutral.num_ships + distance + 1
-            if cost < min_cost and my_planet.num_ships > cost:
+
+            #fix: only send if there is a buffer
+            if cost < min_cost and my_planet.num_ships > cost + 5:
                 min_cost = cost
                 closest_planet = my_planet
         
@@ -164,13 +165,11 @@ def strategic_spread(state):
             neutral_values.append((value, neutral, closest_planet, min_cost))
     
     if neutral_values:
-        # Capture most valuable neutral planet
         neutral_values.sort(reverse=True)
         _, neutral, my_planet, cost = neutral_values[0]
         return issue_order(state, my_planet.ID, neutral.ID, cost)
     
     return False
-
 
 def reinforce_front_line(state):
     """Reinforce front line planets"""
