@@ -1,53 +1,163 @@
-# P3 Behavior Trees for Plant Wars
+# bt_bot
 
-## Overview
-Python AI bot that plays, a strategy game, Planet Wars. The objective of the game is to conquer planets using ships. The bot uses our implmented Behavior Trees for context awareness and structured decisions in real time. The game is implented in java with our behavior tree in Python.
+## 1. Overview
 
-## Project Structure
-Behavior_tree_bot -> bt_bot.py, behaviors.py, checks.py, 
-</br>bt_nodes.py
-</br>planet_wars.py
-</br>run.py
+The original bot used a simple attack-and-expand logic. This version has been fully redesigned for strategic adaptability. It evaluates threats, identifies opportunities, and dynamically adjusts its behavior using a multi-layered behavior tree structure.
 
-## Behavior.py (explanation)
-attack_weakest_enemy_planet(state)
-</br>Attacks the enemy planet with the fewest ships using half the ships from player 1 strongest planet, but only if no fleet is already in flight. 
-</br></br>
+## 2. Core Features & Enhancements
 
-spread_to_weakest_neutral_planet(state)
-</br>Sends ships to conquer the weakest neutral planet, only if no fleets are already in flight. 
-</br></br>
+### bt_bot.py: Behavior Tree Overhaul
 
-smart_attack_calculation(state)
-</br>Attacks the most efficient enemy planet by calculating how many ships is need, based on planet growth rate, travel distance, and current number of ships.
-</br></br>
+The main logic is rebuilt with an 8-level priority-based behavior tree inside the `setup_behavior_tree()` function.  
+The root node is:  
+`Selector(name='Master Strategic Controller')`  
+This ensures the most critical actions are always executed first.
 
-defend_weakest_planet(state)
-</br>Finds the most vulnerable of player 1 planets and defends against from a stronger planet
-</br></br>
+**Priority Order:**
+1. Emergency Defense Protocol  
+2. Overwhelming Assault  
+3. Opportunistic Strike  
+4. Defensive Reinforcement  
+5. Early Game Strategy  
+6. Mid-Late Game Strategy  
+7. Basic Expansion Strategy  
+8. Fallback Attack → `attack_weakest_enemy_planet`
 
-aggressive_multi_attack(state)
-</br>If there is a stronger advantage, this will cause up to 3 attacks to happen against enemies planets
-</br></br>
+**Branching Logic:**
+- **Emergency Defense:**  
+  Calls `defend_weakest_planet()` immediately if `under_attack()` returns `True`.
 
-strategic_spread(state)
-</br>Expands to neutral plants with high value
-</br></br>
+- **Overwhelming Assault:**  
+  Triggers `aggressive_multi_attack()` when `have_overwhelming_advantage()` is `True`.
 
-reinforce_front_line(state)
-</br>Reinforces front-line planets that are closer to the enemies and weak. 
-</br></br>
+- **Early Game Strategy:**  
+  If `early_game()` is `True`, the bot expands cautiously using `strategic_spread()`.
 
-opportunistic_attack(state)
-</br>If the enemy has no fleets in flight, this launches an attack on the easiest enemy planet. 
+---
 
+### behaviors.py: Strategic Action Functions
 
-## bt_bot.py
-Defines and executes our behavior tree bot in an strategic behavior in the priority of emergency defense, aggressive attack, opportunistic attack, defensive reinforcement if needed, strategic expansion, mid-late game strategy (fleet advantage+aggressive expansion, aggressive attack, then general advantage situation attack), basic expansion strategy (when neutral planets exist), lastly basic attack.
+Six high-level action functions support advanced decision-making:
 
-## checks.py
-Contains state-based check functions, returning True or False for each function if the conditions are met. 
+- `smart_attack_calculation()`  
+  Chooses targets by balancing distance, ship cost, and growth rate.
 
-basic checks = if_neutral_planet_available(state), have_largest_fleet(state), 
+- `defend_weakest_planet()`  
+  Detects the most vulnerable friendly planet and reinforces it.
 
-advanced checks = under_attack(state), have_overwhelming_advantage(state), have_multiple_planets(state), enemy_nearby(state), weak_enemy_exists(state), should_defend_planet(state), profitiable_neutral_exists(state), early_game(state), can_aggressive_expand(state),
+- `aggressive_multi_attack()`  
+  Launches simultaneous attacks when a major advantage is detected.
+
+- `strategic_spread()`  
+  Prioritizes capturing neutral planets with high growth vs. ship cost.
+
+- `reinforce_front_line()`  
+  Shifts support fleets from rear to frontline planets.
+
+- `opportunistic_attack()`  
+  Exploits windows when enemy planets are left unguarded.
+
+---
+
+### checks.py: Game State Evaluation
+
+Nine condition-checking functions help the bot make precise decisions:
+
+- `under_attack()`  
+  Returns `True` if enemy fleets are targeting friendly planets.
+
+- `have_overwhelming_advantage()`  
+  Checks if total ships exceed enemy’s by more than 2x.
+
+- `should_defend_planet()`  
+  Compares incoming enemy forces to current defense.
+
+- `early_game()`  
+  True if most planets are still unoccupied.
+
+- `weak_enemy_exists()`  
+  Finds lightly defended enemy planets.
+
+- `profitable_neutral_exists()`  
+  Filters neutral planets by ROI (growth vs. capture cost).
+
+- `have_multiple_planets()`  
+  Checks if bot controls more than one planet.
+
+- `enemy_nearby()`  
+  Detects nearby enemy planets.
+
+- `can_aggressive_expand()`  
+  Validates if the bot has the largest fleet and few active missions.
+
+---
+
+### bt_bot.log
+
+INFO:root:
+Selector: Master Strategic Controller
+| Sequence: Emergency Defense Protocol
+| | Check: under_attack
+| | Action: defend_weakest_planet
+| Sequence: Overwhelming Assault
+| | Check: have_overwhelming_advantage
+| | Action: aggressive_multi_attack
+| Sequence: Opportunistic Strike
+| | Sequence: Perfect Attack Opportunity
+| | | Check: weak_enemy_exists
+| | | Action: opportunistic_attack
+| Sequence: Defensive Reinforcement
+| | Check: should_defend_planet
+| | Check: have_multiple_planets
+| | Action: reinforce_front_line
+| Selector: Early Game Strategy
+| | Sequence: Early Strategic Expansion
+| | | Check: early_game
+| | | Check: profitable_neutral_exists
+| | | Action: strategic_spread
+| | Sequence: Early Normal Expansion
+| | | Check: early_game
+| | | Check: if_neutral_planet_available
+| | | Action: spread_to_weakest_neutral_planet
+| Selector: Mid-Late Game Strategy
+| | Sequence: Aggressive Expansion
+| | | Check: can_aggressive_expand
+| | | Action: smart_attack_calculation
+| | Sequence: Nearby Enemy Assault
+| | | Check: enemy_nearby
+| | | Check: have_largest_fleet
+| | | Action: smart_attack_calculation
+| | Sequence: Standard Advantage Attack
+| | | Check: have_largest_fleet
+| | | Action: smart_attack_calculation
+| Sequence: Basic Expansion Strategy
+| | Check: if_neutral_planet_available
+| | Action: strategic_spread
+| Action: attack_weakest_enemy_planet
+
+---
+
+## 3. How to Run
+
+### Prerequisites
+- Java JDK  
+- Python
+
+### Execution
+
+Make sure all files (`bt_bot.py`, `behaviors.py`, `checks.py`) are in the correct directory.  
+Run your game engine or simulation framework as usual — `bt_bot.py` should be imported and used as the main agent controller.
+
+---
+
+## Team Contributions
+
+- **Inho Yoo**  
+  - Redesigned the entire behavior tree structure and overall strategy (`bt_bot.py`)
+  - Developed intelligent action functions for strategic decision-making (`behaviors.py`)
+  - Implemented advanced game state check functions (`checks.py`)
+
+- **Daisy Fragoso**  
+  - Analyzed the `opponent_bot` structure for benchmarking and evaluation
+  - Identified and improved weaknesses in the modified `behaviors.py` and proposed improvements
+  - Optimized the bot's control logic and behavior tree structure
